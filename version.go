@@ -64,8 +64,16 @@ func (v VersionCreateClause) MergeClause(*clause.Clause) {
 }
 
 func (v VersionCreateClause) ModifyStatement(stmt *gorm.Statement) {
+	var reflectValue reflect.Value
+	switch stmt.ReflectValue.Kind() {
+	case reflect.Slice, reflect.Array:
+		rv := stmt.ReflectValue.Index(stmt.CurDestIndex)
+		reflectValue = reflect.Indirect(rv)
+	default:
+		reflectValue = stmt.ReflectValue
+	}
 	var value int64 = 1
-	if val, zero := v.Field.ValueOf(stmt.Context, stmt.ReflectValue); !zero {
+	if val, zero := v.Field.ValueOf(stmt.Context, reflectValue); !zero {
 		if version, ok := val.(Version); ok {
 			value = version.Int64
 		}
